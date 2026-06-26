@@ -168,6 +168,16 @@ class CoverageRegressionTest < Minitest::Test
     assert_equal [[:get, '/health', {}], [:post, '/jobs', { json: { ok: true }, body: nil }]], fake_endpoint.calls
   end
 
+  def test_microvm_endpoint_raises_when_url_is_unavailable
+    vm = Lambda::MicroVMs::MicroVM.new(client: Object.new, id: 'vm-1')
+
+    error = assert_raises(Lambda::MicroVMs::EndpointError) { vm.endpoint(token: 'token') }
+
+    assert_equal 'MicroVM endpoint URL is unavailable', error.message
+    assert_equal 0, error.status
+    assert_nil error.body
+  end
+
   def test_microvm_waits_for_suspended_and_terminated_states
     sdk = FakeSdk.new
     sdk.microvm_states = %i[running suspended running terminated]
@@ -351,27 +361,30 @@ class CoverageRegressionTest < Minitest::Test
       assert doctor.send(:file_check, 'Dockerfile', project.dockerfile).ok
       assert doctor.send(:config_check, 'role_arn', project.role_arn).ok
       assert doctor.send(:ric_check).ok
-      refute_nil doctor.checks.find { |check| check.name == 'Ruby' }
+      refute_nil(doctor.checks.find { |check| check.name == 'Ruby' })
       refute_nil doctor.ok?
 
       File.write(File.join(dir, 'Gemfile'), "gem 'json'\n")
+
       refute doctor.send(:ric_check).ok
       FileUtils.rm_f(File.join(dir, 'Gemfile'))
+
       refute doctor.send(:ric_check).ok
     end
   end
-
 
   def test_remaining_branch_shapes
     assert_nil Lambda::MicroVMs::Util.extract(Object.new, :missing)
 
     sdk = FakeSdk.new
     vm = Lambda::MicroVMs::MicroVM.new(client: Lambda::MicroVMs::Client.new(sdk: sdk), id: 'vm-1')
+
     assert_equal 'token-1', vm.auth_token
 
     nil_resume_client = Object.new
     def nil_resume_client.resume_microvm(**_params) = nil
     vm = Lambda::MicroVMs::MicroVM.new(client: nil_resume_client, id: 'vm-1', data: { state: 'suspended' })
+
     assert_same vm, vm.resume
     assert_predicate vm, :suspended?
 
@@ -384,6 +397,7 @@ class CoverageRegressionTest < Minitest::Test
     Dir.mktmpdir do |dir|
       File.write(File.join(dir, 'microvm.yml'), "name: demo\n")
       project = Lambda::MicroVMs::Project.load(File.join(dir, 'microvm.yml'))
+
       assert_equal({}, project.run_params)
       assert_equal 'relative.zip', Lambda::MicroVMs::Packager.new(project).package(output: 'relative.zip')
       FileUtils.rm_f(File.join(dir, 'relative.zip'))
@@ -391,6 +405,7 @@ class CoverageRegressionTest < Minitest::Test
       doctor = Lambda::MicroVMs::Doctor.new(project: project)
       bad_command = Object.new
       def bad_command.to_s = raise 'bad command'
+
       refute doctor.send(:command_check, 'bad command', bad_command).ok
     end
   end
@@ -427,5 +442,4 @@ class CoverageRegressionTest < Minitest::Test
     Object.send(:remove_const, :Aws) if Object.const_defined?(:Aws, false)
     Object.const_set(:Aws, original_aws) if original_aws_defined
   end
-
 end

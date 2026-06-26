@@ -58,8 +58,8 @@ Minitest.after_run do
   end
 
   if ENV['ENFORCE_COVERAGE'] != 'false'
-    raise "line coverage below 99%" unless line_percent > 99.0 # rubocop:disable Lint/FloatComparison
-    raise 'branch coverage below 99%' unless branch_percent > 99.0 # rubocop:disable Lint/FloatComparison
+    raise 'line coverage below 99%' unless line_percent > 99.0
+    raise 'branch coverage below 99%' unless branch_percent > 99.0
   end
 end
 

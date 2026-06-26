@@ -14,3 +14,5 @@ gem 'simplecov', '~> 0.22.0'
 gem 'yard', '~> 0.9.44'
 
 gem 'pry', '~> 0.16.0'
+
+gem 'steep', '~> 2.0'
