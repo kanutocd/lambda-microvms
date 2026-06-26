@@ -63,7 +63,7 @@ module Lambda
       private
 
       def build_uri(path)
-        base = URI(@url)
+        base = ::URI.parse(@url)
         return base if path.nil? || path.empty? || path == '/'
 
         joined = [base.path.sub(%r{/\z}, ''), path.sub(%r{\A/}, '')].reject(&:empty?).join('/').sub(%r{\A/+}, '')

@@ -17,7 +17,7 @@ module Lambda
         @project = project
       end
 
-# Create the zip artifact for the configured project.
+      # Create the zip artifact for the configured project.
       #
       # @param output [String] output zip path
       # @return [String] output path

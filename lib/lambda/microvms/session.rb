@@ -6,7 +6,7 @@ module Lambda
     module Session
       module_function
 
-# Run a MicroVM, wait for it, yield it, and then clean it up.
+      # Run a MicroVM, wait for it, yield it, and then clean it up.
       #
       # @param image_arn [String] MicroVM image ARN
       # @param role_arn [String] IAM role ARN for the MicroVM runtime
@@ -23,7 +23,7 @@ module Lambda
         cleanup(vm, after) if vm
       end
 
-# Apply a session cleanup policy to a MicroVM.
+      # Apply a session cleanup policy to a MicroVM.
       #
       # @param vm [MicroVM] MicroVM to clean up
       # @param after [Symbol, nil] cleanup policy

@@ -14,7 +14,7 @@ module Lambda
         @force = force
       end
 
-# Create the scaffolded project files.
+      # Create the scaffolded project files.
       #
       # @return [String] target directory
       def create

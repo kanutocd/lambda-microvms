@@ -3,6 +3,7 @@ module Lambda
     VERSION: String
 
     def self.session: (image_arn: String, role_arn: String, ?after: Symbol, ?client: Client, **untyped) { (MicroVM) -> untyped } -> untyped
+    def session: (image_arn: String, role_arn: String, ?after: Symbol, ?client: Client, **untyped) { (MicroVM) -> untyped } -> untyped
 
     class Error < StandardError
     end
@@ -43,6 +44,31 @@ module Lambda
       def create_auth_token: (**untyped) -> untyped
       def create_microvm_auth_token: (**untyped) -> untyped
       def call_sdk: (Symbol operation, **untyped) -> untyped
+
+      private
+
+      def build_sdk: (region: String?, profile: String?, **untyped) -> untyped
+    end
+
+    module Util
+      def extract: (untyped value, *untyped keys) -> untyped
+      def normalize_state: (untyped value) -> Symbol
+      def self.extract: (untyped value, *untyped keys) -> untyped
+      def self.normalize_state: (untyped value) -> Symbol
+    end
+
+    class Waiter
+      DEFAULT_DELAY: Float
+      DEFAULT_TIMEOUT: Float
+      def initialize: (?delay: Numeric, ?timeout: Numeric, ?sleeper: untyped) -> void
+      def wait: (?message: String) { () -> untyped } -> untyped
+    end
+
+    module Session
+      def session: (image_arn: String, role_arn: String, ?after: Symbol?, ?client: Client, **untyped) { (MicroVM) -> untyped } -> untyped
+      def cleanup: (MicroVM vm, Symbol? after) -> untyped
+      def self.session: (image_arn: String, role_arn: String, ?after: Symbol?, ?client: Client, **untyped) { (MicroVM) -> untyped } -> untyped
+      def self.cleanup: (MicroVM vm, Symbol? after) -> untyped
     end
 
     class Image
@@ -88,7 +114,13 @@ module Lambda
       def initialize: (url: String, token: String?, ?http: untyped) -> void
       def get: (String path, ?headers: Hash[String, String]) -> untyped
       def post: (String path, ?json: untyped, ?body: String?, ?headers: Hash[String, String]) -> untyped
-      def request: (singleton(Net::HTTPGenericRequest) klass, String path, ?json: untyped, ?body: String?, ?headers: Hash[String, String]) -> untyped
+      def request: (untyped klass, String path, ?json: untyped, ?body: String?, ?headers: Hash[String, untyped]) -> untyped
+
+      private
+
+      def build_uri: (String? path) -> untyped
+      def parse_response: (untyped response) -> untyped
+      def build_request: (untyped klass, String path, ?headers: Hash[String, untyped], ?json: untyped, ?body: String?) -> untyped
     end
 
     class Project
@@ -114,6 +146,11 @@ module Lambda
       def create_image_params: (artifact_uri: String) -> Hash[Symbol, untyped]
       def run_params: () -> Hash[Symbol, untyped]
       def require!: (String field, untyped value) -> untyped
+
+      private
+
+      def fetch: (*String paths, default: untyped) -> untyped
+      def stringify_keys: (untyped value) -> untyped
     end
 
     class Scaffold
@@ -121,6 +158,17 @@ module Lambda
       attr_reader directory: String
       def initialize: (String name, ?directory: String, ?force: bool) -> void
       def create: () -> String
+
+      private
+
+      def ensure_target!: () -> void
+      def write: (String path, String content) -> untyped
+      def gemfile: () -> String
+      def dockerfile: () -> String
+      def app_rb: () -> String
+      def microvm_yml: () -> String
+      def readme: () -> String
+      def env_example: () -> String
     end
 
     class Packager
@@ -139,6 +187,10 @@ module Lambda
       def upload: (String path) -> String
       def deploy: () -> Image
       def run: () -> MicroVM
+
+      private
+
+      def build_s3: () -> untyped
     end
 
     class Doctor
@@ -148,6 +200,63 @@ module Lambda
       def initialize: (project: Project, ?runner: untyped) -> void
       def checks: () -> Array[untyped]
       def ok?: () -> bool
+
+      private
+
+      def check: (String name, untyped ok, untyped detail) -> untyped
+      def command_check: (String name, String command) -> untyped
+      def file_check: (String name, String path) -> untyped
+      def config_check: (String name, untyped value) -> untyped
+      def ric_check: () -> untyped
     end
   end
 end
+
+module Aws
+  module Lambda
+    class Client
+      def initialize: (**untyped) -> void
+    end
+  end
+
+  module S3
+    class Client
+      def initialize: (**untyped) -> void
+    end
+  end
+end
+
+module FileUtils
+  def self.mkdir_p: (String | Array[String]) -> untyped
+end
+
+module JSON
+  def self.parse: (String source) -> untyped
+  def self.generate: (untyped value) -> String
+end
+
+module Net
+  class HTTP
+    def self.start: (String address, Integer port, ?use_ssl: bool) { (untyped) -> untyped } -> untyped
+
+    class Get
+    end
+
+    class Post
+    end
+  end
+end
+
+module Open3
+  def self.capture3: (*String command, ?chdir: String) -> [String, String, untyped]
+end
+
+module URI
+  def self.parse: (String uri) -> untyped
+end
+
+module YAML
+  def self.safe_load_file: (String filename, ?permitted_classes: Array[singleton(Symbol)], ?aliases: bool) -> untyped
+end
+
+$CHILD_STATUS: untyped

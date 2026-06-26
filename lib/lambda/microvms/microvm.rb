@@ -84,7 +84,10 @@ module Lambda
       # @param token_params [Hash] parameters used when requesting a token
       # @return [Endpoint]
       def endpoint(token: nil, **token_params)
-        Endpoint.new(url: endpoint_url, token: token || auth_token(**token_params))
+        url = endpoint_url
+        raise EndpointError.new('MicroVM endpoint URL is unavailable', status: 0, body: nil) unless url
+
+        Endpoint.new(url: url, token: token || auth_token(**token_params))
       end
 
       # Send a GET request to the MicroVM endpoint.

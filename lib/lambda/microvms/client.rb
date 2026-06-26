@@ -13,7 +13,7 @@ module Lambda
       attr_reader :sdk
 
       def initialize(region: nil, profile: nil, sdk: nil, **)
-        @sdk = sdk || build_sdk(region:, profile:, **)
+        @sdk = sdk || build_sdk(region: region, profile: profile, **)
       end
 
       # Build an image resource wrapper without fetching it.

@@ -61,9 +61,7 @@ module Lambda
       def build_s3
         raise LoadError, 'install aws-sdk-s3 to use deployment helpers' unless defined?(Aws::S3::Client)
 
-        args = {}
-        args[:region] = project.region if project.region
-        args[:profile] = project.profile if project.profile
+        args = { region: project.region, profile: project.profile }.compact
         Aws::S3::Client.new(**args)
       end
     end
