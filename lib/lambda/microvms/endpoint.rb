@@ -45,7 +45,7 @@ module Lambda
         base = URI(@url)
         return base if path.nil? || path.empty? || path == '/'
 
-        joined = [base.path.sub(%r{/\z}, ''), path.sub(%r{\A/}, '')].reject(&:empty?).join('/')
+        joined = [base.path.sub(%r{/\z}, ''), path.sub(%r{\A/}, '')].reject(&:empty?).join('/').sub(%r{\A/+}, '')
         base.path = "/#{joined}"
         base
       end
