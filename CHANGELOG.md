@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.0
+
 - Added `lambda-microvms sdk-contract` and doctor output for the experimental MicroVM SDK operation contract.
 - Added an adapter boundary for MicroVM SDK operations.
 - Added `Lambda::MicroVMs::FunctionClient` and `lambda-microvms function-invoke` for standard Lambda function APIs.
