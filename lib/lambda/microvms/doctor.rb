@@ -53,7 +53,8 @@ module Lambda
       end
 
       def config_check(name, value)
-        Check.new(name:, ok: value && value != '', detail: value || 'missing')
+        ok = value && value.to_s.strip != ''
+        Check.new(name:, ok: ok, detail: ok ? value : 'missing')
       end
 
       def ric_check

@@ -23,6 +23,7 @@ module Lambda
         when 'deploy' then deploy
         when 'run' then run_microvm
         when 'doctor' then doctor
+        when 'sdk-contract' then sdk_contract
         when 'help', nil then help
         else
           @err.puts "unknown command: #{command}"
@@ -81,6 +82,17 @@ module Lambda
         checks.all?(&:ok) ? 0 : 1
       end
 
+      def sdk_contract
+        unsupported = Client.unsupported_operations
+        if unsupported.empty?
+          @out.puts 'Aws::Lambda::Client exposes all Lambda MicroVM operations'
+          0
+        else
+          @err.puts "missing Aws::Lambda::Client operations: #{unsupported.join(', ')}"
+          1
+        end
+      end
+
       def help
         @out.puts <<~HELP
           lambda-microvms #{VERSION}
@@ -91,6 +103,7 @@ module Lambda
             package       Create deployable source artifact
             deploy        Package, upload to S3, and create a MicroVM image
             run           Run the configured MicroVM image
+            sdk-contract  Check whether aws-sdk-lambda exposes MicroVM operations
             version       Print version
         HELP
         0

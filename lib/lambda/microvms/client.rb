@@ -10,10 +10,43 @@ module Lambda
   module MicroVMs
     # Ruby wrapper over Aws::Lambda::Client for Lambda MicroVM lifecycle operations.
     class Client
+      # SDK methods this wrapper expects from Aws::Lambda::Client.
+      REQUIRED_OPERATIONS = %i[
+        create_microvm_image
+        get_microvm_image
+        delete_microvm_image
+        run_microvm
+        get_microvm
+        list_microvms
+        suspend_microvm
+        resume_microvm
+        terminate_microvm
+        create_microvm_auth_token
+      ].freeze
+
       attr_reader :sdk
 
       def initialize(region: nil, profile: nil, sdk: nil, **)
         @sdk = sdk || build_sdk(region: region, profile: profile, **)
+      end
+
+      # Return wrapper operations missing from the given SDK client.
+      #
+      # @param sdk [Object, nil] SDK client to inspect
+      # @return [Array<Symbol>] missing SDK operation names
+      def self.unsupported_operations(sdk = nil)
+        sdk ||= Aws::Lambda::Client.new(stub_responses: true) if defined?(Aws::Lambda::Client)
+        return REQUIRED_OPERATIONS unless sdk
+
+        REQUIRED_OPERATIONS.reject { |operation| sdk.respond_to?(operation) }
+      end
+
+      # Check whether the given SDK client exposes all MicroVM operations.
+      #
+      # @param sdk [Object, nil] SDK client to inspect
+      # @return [Boolean]
+      def self.sdk_contract_supported?(sdk = nil)
+        unsupported_operations(sdk).empty?
       end
 
       # Build an image resource wrapper without fetching it.

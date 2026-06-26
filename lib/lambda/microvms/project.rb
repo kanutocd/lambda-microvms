@@ -94,7 +94,7 @@ module Lambda
       #
       # @return [Hash]
       def payload
-        fetch('runtime.payload', default: {}) || {}
+        hash_config('runtime.payload')
       end
 
       # Build parameters for image creation with the artifact URI injected.
@@ -102,7 +102,7 @@ module Lambda
       # @param artifact_uri [String] uploaded artifact URI
       # @return [Hash] SDK-style create image parameters
       def create_image_params(artifact_uri:)
-        params = fetch('image.create', default: {}) || {}
+        params = hash_config('image.create')
         params = stringify_keys(params)
         symbolized = params.to_h { |key, value| [key.to_sym, value] }
         symbolized[:name] ||= image_name
@@ -114,11 +114,24 @@ module Lambda
       #
       # @return [Hash] SDK-style run parameters
       def run_params
-        params = stringify_keys(fetch('runtime.run', default: {}) || {})
+        params = stringify_keys(hash_config('runtime.run'))
         symbolized = params.to_h { |key, value| [key.to_sym, value] }
         symbolized[:role_arn] ||= role_arn if role_arn
         symbolized[:payload] ||= payload unless payload.empty?
         symbolized
+      end
+
+      # Validate project configuration sections used by deployment commands.
+      #
+      # @return [self]
+      # @raise [ConfigurationError] when a known section has an invalid shape
+      def validate!
+        validate_hash!
+        validate_lifecycle_after!
+        hash_config('image.create')
+        hash_config('runtime.payload')
+        hash_config('runtime.run')
+        self
       end
 
       # Return a required value or raise a configuration error.
@@ -128,12 +141,31 @@ module Lambda
       # @return [Object] the validated value
       # @raise [ConfigurationError] when the value is nil or empty
       def require!(field, value)
-        return value if value && value != ''
+        return value if value && value.to_s.strip != ''
 
         raise ConfigurationError, "missing required project configuration: #{field}"
       end
 
       private
+
+      def validate_hash!
+        return if @config.is_a?(Hash)
+
+        raise ConfigurationError, 'project configuration must be a YAML mapping'
+      end
+
+      def validate_lifecycle_after!
+        return if %i[keep suspend terminate].include?(lifecycle_after)
+
+        raise ConfigurationError, "unsupported runtime.after: #{lifecycle_after.inspect}"
+      end
+
+      def hash_config(path)
+        value = fetch(path, default: {}) || {}
+        return value if value.is_a?(Hash)
+
+        raise ConfigurationError, "#{path} must be a mapping"
+      end
 
       def fetch(*paths, default:)
         paths.each do |path|

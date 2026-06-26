@@ -26,7 +26,7 @@ end
 namespace :rbs do
   desc 'Validate signatures and statically check the implementation'
   task :validate do
-    sh 'bundle exec rbs -I sig -r lambda-microvms validate'
+    sh 'bundle exec rbs -I sig validate'
     sh 'bundle exec steep check'
   end
 end
@@ -36,5 +36,5 @@ task :coverage do
   sh({ 'COVERAGE' => 'true' }, 'bundle exec rake test')
 end
 
-task quality: %i[rubocop coverage]
+task quality: %i[rubocop coverage rbs:validate yard_coverage]
 task default: :quality

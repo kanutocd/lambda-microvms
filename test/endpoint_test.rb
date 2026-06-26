@@ -50,4 +50,23 @@ class EndpointTest < Minitest::Test
     assert_equal 500, error.status
     assert_equal 'boom', error.body
   end
+
+  def test_get_root_preserves_base_path_without_authorization
+    http = FakeHttp.new(Response.new(code: '204', body: '', headers: {}))
+    endpoint = Lambda::MicroVMs::Endpoint.new(url: 'https://example.test/base', token: nil, http: http)
+
+    assert_equal '', endpoint.get('/')
+    assert_nil http.last_request['Authorization']
+    assert_equal '/base', http.last_request.uri.path
+  end
+
+  def test_post_raw_body_and_custom_header
+    http = FakeHttp.new(Response.new(code: '202', body: 'accepted', headers: { 'Content-Type' => 'text/plain' }))
+    endpoint = Lambda::MicroVMs::Endpoint.new(url: 'https://example.test/api/', token: 'token', http: http)
+
+    assert_equal 'accepted', endpoint.post('jobs', body: 'raw', headers: { 'X-Test' => '1' })
+    assert_equal 'raw', http.last_request.body
+    assert_equal '/api/jobs', http.last_request.uri.path
+    assert_equal '1', http.last_request['X-Test']
+  end
 end

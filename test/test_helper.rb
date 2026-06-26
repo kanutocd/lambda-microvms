@@ -134,3 +134,42 @@ class FakeSdk
     @calls << [name, params]
   end
 end
+
+module AwsConstantHelpers
+  def with_aws_constant(service, client_class)
+    original_aws_defined = Object.const_defined?(:Aws, false)
+    original_aws = Object.const_get(:Aws) if original_aws_defined
+    Object.send(:remove_const, :Aws) if original_aws_defined
+
+    service_module = Module.new
+    service_module.const_set(:Client, client_class)
+    aws = Module.new
+    aws.const_set(service, service_module)
+    Object.const_set(:Aws, aws)
+    yield
+  ensure
+    Object.send(:remove_const, :Aws) if Object.const_defined?(:Aws, false)
+    Object.const_set(:Aws, original_aws) if original_aws_defined
+  end
+
+  def without_aws_constant(service)
+    original_aws_defined = Object.const_defined?(:Aws, false)
+    original_aws = Object.const_get(:Aws) if original_aws_defined
+    Object.send(:remove_const, :Aws) if original_aws_defined
+
+    other_service = service == :S3 ? :Lambda : :S3
+    aws = Module.new
+    aws.const_set(other_service, Module.new)
+    Object.const_set(:Aws, aws)
+    yield
+  ensure
+    Object.send(:remove_const, :Aws) if Object.const_defined?(:Aws, false)
+    Object.const_set(:Aws, original_aws) if original_aws_defined
+  end
+end
+
+module Minitest
+  class Test
+    include AwsConstantHelpers
+  end
+end

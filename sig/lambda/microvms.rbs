@@ -27,7 +27,10 @@ module Lambda
     end
 
     class Client
+      REQUIRED_OPERATIONS: Array[Symbol]
       attr_reader sdk: untyped
+      def self.unsupported_operations: (?untyped sdk) -> Array[Symbol]
+      def self.sdk_contract_supported?: (?untyped sdk) -> bool
       def initialize: (?region: String?, ?profile: String?, ?sdk: untyped, **untyped) -> void
       def image: (String arn) -> Image
       def microvm: (String id_or_arn) -> MicroVM
@@ -145,10 +148,14 @@ module Lambda
       def payload: () -> Hash[String, untyped]
       def create_image_params: (artifact_uri: String) -> Hash[Symbol, untyped]
       def run_params: () -> Hash[Symbol, untyped]
+      def validate!: () -> Project
       def require!: (String field, untyped value) -> untyped
 
       private
 
+      def validate_hash!: () -> void
+      def validate_lifecycle_after!: () -> void
+      def hash_config: (String path) -> Hash[untyped, untyped]
       def fetch: (*String paths, default: untyped) -> untyped
       def stringify_keys: (untyped value) -> untyped
     end
@@ -174,7 +181,7 @@ module Lambda
     class Packager
       DEFAULT_EXCLUDES: Array[String]
       attr_reader project: Project
-      def initialize: (Project project) -> void
+      def initialize: (Project project, ?runner: untyped) -> void
       def package: (?output: String) -> String
     end
 

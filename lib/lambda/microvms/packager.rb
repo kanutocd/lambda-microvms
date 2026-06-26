@@ -13,8 +13,9 @@ module Lambda
 
       attr_reader :project
 
-      def initialize(project)
+      def initialize(project, runner: Open3)
         @project = project
+        @runner = runner
       end
 
       # Create the zip artifact for the configured project.
@@ -31,7 +32,7 @@ module Lambda
         end
         excludes = DEFAULT_EXCLUDES + [relative_output]
         command = ['zip', '-q', '-r', output, '.'] + excludes.flat_map { |pattern| ['-x', pattern] }
-        stdout, stderr, status = Open3.capture3(*command, chdir: project.root)
+        stdout, stderr, status = @runner.capture3(*command, chdir: project.root)
         raise CommandError, "zip failed: #{stderr.empty? ? stdout : stderr}" unless status.success?
 
         output

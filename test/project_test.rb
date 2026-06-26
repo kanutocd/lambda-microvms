@@ -40,4 +40,84 @@ class ProjectTest < Minitest::Test
                    project.create_image_params(artifact_uri: 's3://bucket/key.zip'))
     end
   end
+
+  def test_payload_and_run_params_stringify_nested_values
+    project = project_from(<<~YAML)
+      name: demo
+      role_arn: arn:role
+      runtime:
+        payload:
+          tenant: t1
+        run:
+          environment:
+            - name: A
+              value: B
+    YAML
+
+    assert_equal({ 'tenant' => 't1' }, project.payload)
+    assert_equal({ environment: [{ 'name' => 'A', 'value' => 'B' }], role_arn: 'arn:role',
+                   payload: { 'tenant' => 't1' } }, project.run_params)
+  end
+
+  def test_run_params_preserve_explicit_role_and_empty_payload
+    project = project_from(<<~YAML)
+      name: demo
+      role_arn: arn:role
+      runtime:
+        payload:
+        run:
+          role_arn: explicit-role
+          payload: {}
+    YAML
+
+    assert_equal({}, project.payload)
+    assert_equal({ role_arn: 'explicit-role', payload: {} }, project.run_params)
+  end
+
+  def test_run_params_allow_missing_role_when_not_required_yet
+    project = project_from("name: demo\n")
+
+    assert_equal({}, project.run_params)
+  end
+
+  def test_require_rejects_blank_strings
+    project = project_from("name: demo\n")
+
+    assert_equal 'x', project.require!('x', 'x')
+    assert_raises(Lambda::MicroVMs::ConfigurationError) { project.require!('missing', '  ') }
+  end
+
+  def test_validate_rejects_unknown_lifecycle_policy
+    project = project_from("name: demo\nruntime:\n  after: explode\n")
+
+    error = assert_raises(Lambda::MicroVMs::ConfigurationError) { project.validate! }
+
+    assert_match(/unsupported runtime.after/, error.message)
+  end
+
+  def test_validate_rejects_non_hash_sections
+    project = project_from("name: demo\nruntime:\n  payload: nope\n")
+
+    error = assert_raises(Lambda::MicroVMs::ConfigurationError) { project.validate! }
+
+    assert_equal 'runtime.payload must be a mapping', error.message
+  end
+
+  def test_load_rejects_non_mapping_yaml
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, 'microvm.yml'), "--- nope\n")
+      project = Lambda::MicroVMs::Project.load(File.join(dir, 'microvm.yml'))
+
+      assert_raises(Lambda::MicroVMs::ConfigurationError) { project.validate! }
+    end
+  end
+
+  private
+
+  def project_from(yaml)
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, 'microvm.yml'), yaml)
+      return Lambda::MicroVMs::Project.load(File.join(dir, 'microvm.yml'))
+    end
+  end
 end

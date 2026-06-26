@@ -15,7 +15,7 @@ module Lambda
       attr_reader :project, :client, :s3
 
       def initialize(project:, client: nil, s3: nil) # rubocop:disable Naming/MethodParameterName
-        @project = project
+        @project = project.validate!
         @client = client || Client.new(region: project.region, profile: project.profile)
         @s3 = s3 || build_s3
       end
@@ -34,7 +34,7 @@ module Lambda
       def upload(path)
         bucket = project.require!('deployment.bucket', project.s3_bucket)
         key = [project.s3_prefix.sub(%r{/\z}, ''), File.basename(path)].join('/')
-        s3.put_object(bucket: bucket, key: key, body: File.open(path, 'rb'))
+        File.open(path, 'rb') { |body| s3.put_object(bucket: bucket, key: key, body: body) }
         "s3://#{bucket}/#{key}"
       end
 
