@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Lambda
-  module Microvms
-    VERSION = "0.1.0"
+  module MicroVMs
+    VERSION = '0.0.0'
   end
 end
