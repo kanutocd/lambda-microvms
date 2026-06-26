@@ -43,6 +43,18 @@ class ClientTest < Minitest::Test
     assert_match(/run_microvm/, error.message)
   end
 
+  def test_delegates_through_microvm_adapter
+    sdk = FakeSdk.new
+    adapter = Lambda::MicroVMs::Adapters::MicroVMSdk.new(sdk)
+    client = Lambda::MicroVMs::Client.new(sdk: sdk, adapter: adapter)
+
+    client.run(image_arn: 'image-1', role_arn: 'role-1')
+
+    assert_equal [], adapter.unsupported_operations
+    assert_predicate adapter, :supported?
+    assert_equal [:run_microvm, { image_arn: 'image-1', role_arn: 'role-1' }], sdk.calls.last
+  end
+
   def test_resource_helpers_and_passthrough_operations
     sdk = FakeSdk.new
     client = Lambda::MicroVMs::Client.new(sdk: sdk)

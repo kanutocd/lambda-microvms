@@ -29,9 +29,10 @@ module Lambda
     class Client
       REQUIRED_OPERATIONS: Array[Symbol]
       attr_reader sdk: untyped
+      attr_reader adapter: Adapters::MicroVMSdk
       def self.unsupported_operations: (?untyped sdk) -> Array[Symbol]
       def self.sdk_contract_supported?: (?untyped sdk) -> bool
-      def initialize: (?region: String?, ?profile: String?, ?sdk: untyped, **untyped) -> void
+      def initialize: (?region: String?, ?profile: String?, ?sdk: untyped, ?adapter: Adapters::MicroVMSdk, **untyped) -> void
       def image: (String arn) -> Image
       def microvm: (String id_or_arn) -> MicroVM
       def create_image: (**untyped) -> Image
@@ -51,6 +52,31 @@ module Lambda
       private
 
       def build_sdk: (region: String?, profile: String?, **untyped) -> untyped
+    end
+
+    module Adapters
+      class MicroVMSdk
+        REQUIRED_OPERATIONS: Array[Symbol]
+        attr_reader sdk: untyped
+        def initialize: (untyped sdk) -> void
+        def unsupported_operations: () -> Array[Symbol]
+        def supported?: () -> bool
+        def call: (Symbol operation, **untyped) -> untyped
+      end
+    end
+
+    class FunctionClient
+      attr_reader sdk: untyped
+      def initialize: (?region: String?, ?profile: String?, ?sdk: untyped, **untyped) -> void
+      def create_function: (name: String, role_arn: String, handler: String, runtime: String, zip_file: String, **untyped) -> untyped
+      def update_function_code: (function_name: String, zip_file: String, **untyped) -> untyped
+      def invoke: (function_name: String, ?payload: untyped, **untyped) -> untyped
+
+      private
+
+      def build_sdk: (region: String?, profile: String?, **untyped) -> untyped
+      def encode_payload: (untyped payload) -> String?
+      def parse_payload: (untyped payload) -> untyped
     end
 
     module Util
@@ -198,6 +224,7 @@ module Lambda
       private
 
       def build_s3: () -> untyped
+      def ensure_microvm_contract!: () -> void
     end
 
     class Doctor
@@ -215,6 +242,7 @@ module Lambda
       def file_check: (String name, String path) -> untyped
       def config_check: (String name, untyped value) -> untyped
       def ric_check: () -> untyped
+      def sdk_contract_check: () -> untyped
     end
   end
 end
@@ -238,6 +266,9 @@ module FileUtils
 end
 
 module JSON
+  class ParserError < StandardError
+  end
+
   def self.parse: (String source) -> untyped
   def self.generate: (untyped value) -> String
 end

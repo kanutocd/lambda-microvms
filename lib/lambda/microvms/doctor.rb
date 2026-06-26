@@ -27,7 +27,8 @@ module Lambda
           file_check('Dockerfile', project.dockerfile),
           config_check('role_arn', project.role_arn),
           config_check('deployment.bucket', project.s3_bucket),
-          ric_check
+          ric_check,
+          sdk_contract_check
         ]
       end
 
@@ -61,6 +62,13 @@ module Lambda
         gemfile = File.join(project.root, 'Gemfile')
         ok = File.exist?(gemfile) && File.read(gemfile).include?('aws_lambda_ric')
         Check.new(name: 'aws_lambda_ric', ok: ok, detail: ok ? 'present in Gemfile' : 'missing from Gemfile')
+      end
+
+      def sdk_contract_check
+        missing = Client.unsupported_operations
+        ok = missing.empty?
+        detail = ok ? 'MicroVM operations available' : "missing: #{missing.join(', ')}"
+        Check.new(name: 'aws-sdk-lambda MicroVM contract', ok: ok, detail: detail)
       end
     end
   end

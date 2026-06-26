@@ -23,6 +23,7 @@ class DoctorTest < Minitest::Test
     doctor = Lambda::MicroVMs::Doctor.new(project: project_with_ric)
 
     refute_nil(doctor.checks.find { |check| check.name == 'Ruby' })
+    refute_nil(doctor.checks.find { |check| check.name == 'aws-sdk-lambda MicroVM contract' })
     refute_nil doctor.ok?
   end
 
@@ -44,6 +45,17 @@ class DoctorTest < Minitest::Test
     doctor = Lambda::MicroVMs::Doctor.new(project: project_with_ric)
 
     refute doctor.send(:config_check, 'role_arn', '  ').ok
+  end
+
+  def test_sdk_contract_check_reports_success
+    doctor = Lambda::MicroVMs::Doctor.new(project: project_with_ric)
+
+    with_aws_constant(:Lambda, SupportedMicroVMClient) do
+      check = doctor.send(:sdk_contract_check)
+
+      assert_predicate check, :ok
+      assert_equal 'MicroVM operations available', check.detail
+    end
   end
 
   def test_command_check_handles_command_coercion_errors
@@ -74,5 +86,13 @@ class DoctorTest < Minitest::Test
     YAML
     File.write(File.join(dir, 'Dockerfile'), "FROM ruby\n")
     Lambda::MicroVMs::Project.load(File.join(dir, 'microvm.yml'))
+  end
+
+  class SupportedMicroVMClient
+    Lambda::MicroVMs::Client::REQUIRED_OPERATIONS.each do |operation|
+      define_method(operation) { nil }
+    end
+
+    def initialize(**); end
   end
 end

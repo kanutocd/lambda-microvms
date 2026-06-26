@@ -11,23 +11,13 @@ module Lambda
     # Ruby wrapper over Aws::Lambda::Client for Lambda MicroVM lifecycle operations.
     class Client
       # SDK methods this wrapper expects from Aws::Lambda::Client.
-      REQUIRED_OPERATIONS = %i[
-        create_microvm_image
-        get_microvm_image
-        delete_microvm_image
-        run_microvm
-        get_microvm
-        list_microvms
-        suspend_microvm
-        resume_microvm
-        terminate_microvm
-        create_microvm_auth_token
-      ].freeze
+      REQUIRED_OPERATIONS = Adapters::MicroVMSdk::REQUIRED_OPERATIONS
 
-      attr_reader :sdk
+      attr_reader :sdk, :adapter
 
-      def initialize(region: nil, profile: nil, sdk: nil, **)
+      def initialize(region: nil, profile: nil, sdk: nil, adapter: nil, **)
         @sdk = sdk || build_sdk(region: region, profile: profile, **)
+        @adapter = adapter || Adapters::MicroVMSdk.new(@sdk)
       end
 
       # Return wrapper operations missing from the given SDK client.
@@ -38,7 +28,7 @@ module Lambda
         sdk ||= Aws::Lambda::Client.new(stub_responses: true) if defined?(Aws::Lambda::Client)
         return REQUIRED_OPERATIONS unless sdk
 
-        REQUIRED_OPERATIONS.reject { |operation| sdk.respond_to?(operation) }
+        Adapters::MicroVMSdk.new(sdk).unsupported_operations
       end
 
       # Check whether the given SDK client exposes all MicroVM operations.
@@ -158,11 +148,7 @@ module Lambda
       # @return [Object] raw SDK response
       # @raise [UnsupportedOperationError] when the SDK does not expose the operation
       def call_sdk(operation, **params)
-        unless @sdk.respond_to?(operation)
-          raise UnsupportedOperationError, "Aws::Lambda::Client does not expose ##{operation}; upgrade aws-sdk-lambda"
-        end
-
-        @sdk.public_send(operation, **params)
+        adapter.call(operation, **params)
       end
 
       private

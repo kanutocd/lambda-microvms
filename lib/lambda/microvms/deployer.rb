@@ -42,6 +42,7 @@ module Lambda
       #
       # @return [Image] created image resource
       def deploy
+        ensure_microvm_contract!
         artifact = package
         artifact_uri = upload(artifact)
         client.create_image(**project.create_image_params(artifact_uri: artifact_uri))
@@ -51,6 +52,7 @@ module Lambda
       #
       # @return [MicroVM] started MicroVM resource
       def run
+        ensure_microvm_contract!
         image_arn = project.require!('image.arn', project.image_arn)
         role_arn = project.require!('role_arn', project.role_arn)
         client.image(image_arn).run(**project.run_params, role_arn: role_arn)
@@ -63,6 +65,15 @@ module Lambda
 
         args = { region: project.region, profile: project.profile }.compact
         Aws::S3::Client.new(**args)
+      end
+
+      def ensure_microvm_contract!
+        return unless client.respond_to?(:adapter)
+
+        missing = client.adapter.unsupported_operations
+        return if missing.empty?
+
+        raise UnsupportedOperationError, "Aws::Lambda::Client is missing MicroVM operations: #{missing.join(', ')}"
       end
     end
   end

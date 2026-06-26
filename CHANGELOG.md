@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.1.0 Unreleased
+## Unreleased
+
+- Added `lambda-microvms sdk-contract` and doctor output for the experimental MicroVM SDK operation contract.
+- Added an adapter boundary for MicroVM SDK operations.
+- Added `Lambda::MicroVMs::FunctionClient` and `lambda-microvms function-invoke` for standard Lambda function APIs.
+- Made MicroVM deploy/run fail before packaging or uploading when the installed `aws-sdk-lambda` lacks MicroVM operations.
+
+## 0.1.0
 
 - Initial Ruby development kit for AWS Lambda MicroVMs.
 - Client wrapper over `aws-sdk-lambda`.

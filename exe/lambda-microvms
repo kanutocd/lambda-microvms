@@ -7,24 +7,33 @@ module Lambda
   module MicroVMs
     # Minimal CLI for the Ruby Lambda MicroVM development kit.
     class CLI
+      COMMANDS = {
+        'version' => :version,
+        '--version' => :version,
+        '-v' => :version,
+        'new' => :new_project,
+        'package' => :package,
+        'deploy' => :deploy,
+        'run' => :run_microvm,
+        'doctor' => :doctor,
+        'sdk-contract' => :sdk_contract,
+        'function-invoke' => :function_invoke,
+        'help' => :help
+      }.freeze
+
       def initialize(argv, out: $stdout, err: $stderr)
         @argv = argv
         @out = out
         @err = err
       end
 
-      # rubocop:disable Metrics/MethodLength
       def run
         command = @argv.shift
-        case command
-        when 'version', '--version', '-v' then version
-        when 'new' then new_project
-        when 'package' then package
-        when 'deploy' then deploy
-        when 'run' then run_microvm
-        when 'doctor' then doctor
-        when 'sdk-contract' then sdk_contract
-        when 'help', nil then help
+        action = COMMANDS[command]
+        if action
+          send(action)
+        elsif command.nil?
+          help
         else
           @err.puts "unknown command: #{command}"
           help
@@ -34,7 +43,6 @@ module Lambda
         @err.puts "error: #{e.message}"
         1
       end
-      # rubocop:enable Metrics/MethodLength
 
       private
 
@@ -93,6 +101,14 @@ module Lambda
         end
       end
 
+      def function_invoke
+        function_name = @argv.shift || raise(ArgumentError, 'usage: lambda-microvms function-invoke NAME [JSON]')
+        payload = @argv.empty? ? nil : JSON.parse(@argv.join(' '))
+        result = FunctionClient.new.invoke(function_name:, payload:)
+        @out.puts(result.is_a?(String) ? result : JSON.generate(result))
+        0
+      end
+
       def help
         @out.puts <<~HELP
           lambda-microvms #{VERSION}
@@ -104,6 +120,8 @@ module Lambda
             deploy        Package, upload to S3, and create a MicroVM image
             run           Run the configured MicroVM image
             sdk-contract  Check whether aws-sdk-lambda exposes MicroVM operations
+            function-invoke NAME [JSON]
+                          Invoke a standard Lambda function with supported AWS APIs
             version       Print version
         HELP
         0

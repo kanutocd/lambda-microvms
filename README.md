@@ -5,9 +5,9 @@
 [![Ruby Version](https://img.shields.io/badge/ruby-%3E%3D%203.2-ruby.svg)](https://www.ruby-lang.org/en/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Ruby development kit for AWS Lambda MicroVMs.
+A Ruby development kit for AWS Lambda MicroVM experiments and standard Lambda function workflows.
 
-`lambda-microvms` builds on the official `aws-sdk-lambda` gem. It provides Ruby resource objects, lifecycle helpers, endpoint calls, project scaffolding, packaging, and deployment commands for Lambda MicroVM applications.
+`lambda-microvms` builds on the official `aws-sdk-lambda` gem. It provides Ruby resource objects, lifecycle helpers, endpoint calls, project scaffolding, packaging, experimental MicroVM deployment commands, and a supported Lambda function client for APIs that exist today.
 
 It gives Ruby developers a higher-level workflow:
 
@@ -77,7 +77,15 @@ gem "aws_lambda_ric"
 lambda-microvms doctor
 ```
 
-Checks Ruby, Docker, AWS CLI, project config, Dockerfile, deployment bucket, runtime role, and `aws_lambda_ric` presence.
+Checks Ruby, Docker, AWS CLI, project config, Dockerfile, deployment bucket, runtime role, `aws_lambda_ric` presence, and whether the installed `aws-sdk-lambda` exposes the experimental MicroVM operation contract.
+
+## Check the MicroVM SDK contract
+
+```bash
+lambda-microvms sdk-contract
+```
+
+The public `aws-sdk-lambda` gem may not expose MicroVM lifecycle operations such as `create_microvm_image` or `run_microvm`. When those methods are missing, MicroVM `deploy` and `run` fail before packaging or uploading artifacts.
 
 ## Package
 
@@ -112,6 +120,30 @@ lambda-microvms run
 ```
 
 Runs the configured image ARN with the configured role ARN and runtime payload.
+
+## Standard Lambda function APIs
+
+The gem also includes a supported path for regular Lambda function APIs available in `aws-sdk-lambda` today.
+
+```ruby
+client = Lambda::MicroVMs::FunctionClient.new(region: "us-east-1")
+
+client.create_function(
+  name: "ruby-worker",
+  role_arn: "arn:aws:iam::123456789012:role/lambda-runtime",
+  handler: "app.Handler.process",
+  runtime: "ruby3.4",
+  zip_file: "tmp/function.zip"
+)
+
+result = client.invoke(function_name: "ruby-worker", payload: { hello: "world" })
+```
+
+You can also invoke an existing function from the CLI:
+
+```bash
+lambda-microvms function-invoke ruby-worker '{"hello":"world"}'
+```
 
 ## Ruby SDK usage
 
@@ -169,6 +201,7 @@ Lambda::MicroVMs::Client
         ├── MicroVM
         ├── Endpoint
         ├── Session
+        ├── FunctionClient
         ├── Scaffold
         ├── Packager
         └── Deployer
@@ -176,5 +209,6 @@ Lambda::MicroVMs::Client
 
 ## Status
 
-This is an early implementation. Lambda MicroVMs is new, so generated AWS SDK operation shapes may evolve. Unsupported low-level operations raise `Lambda::MicroVMs::UnsupportedOperationError` with an upgrade hint.
-give
+MicroVM lifecycle support is experimental and contract-gated. The current public `aws-sdk-lambda` may not expose the MicroVM methods this gem wraps. Use `lambda-microvms sdk-contract` to verify your installed SDK.
+
+Standard Lambda function operations are available through `Lambda::MicroVMs::FunctionClient`.

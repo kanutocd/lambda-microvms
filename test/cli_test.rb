@@ -21,6 +21,13 @@ class CLITest < Minitest::Test
     refute_predicate status, :success?
   end
 
+  def test_help_lists_function_invoke
+    stdout, _stderr, status = run_cli('help')
+
+    assert_match(/function-invoke NAME/, stdout)
+    assert_predicate status, :success?
+  end
+
   def test_sdk_contract_reports_missing_operations
     stdout, stderr, status = run_cli('sdk-contract')
 
