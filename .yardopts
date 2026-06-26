@@ -1,0 +1,10 @@
+--title "lambda-microvms API Documentation"
+--markup markdown
+--readme README.md
+lib/**/*.rb
+-
+README.md
+CHANGELOG.md
+CODE_OF_CONDUCT.md
+LICENSE.txt
+
