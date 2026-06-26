@@ -1,3 +1,102 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-require "lambda/microvms"
+require 'lambda/microvms'
+
+module Lambda
+  module MicroVMs
+    # Minimal CLI for the Ruby Lambda MicroVM development kit.
+    class CLI
+      def initialize(argv, out: $stdout, err: $stderr)
+        @argv = argv
+        @out = out
+        @err = err
+      end
+
+      # rubocop:disable Metrics/MethodLength
+      def run
+        command = @argv.shift
+        case command
+        when 'version', '--version', '-v' then version
+        when 'new' then new_project
+        when 'package' then package
+        when 'deploy' then deploy
+        when 'run' then run_microvm
+        when 'doctor' then doctor
+        when 'help', nil then help
+        else
+          @err.puts "unknown command: #{command}"
+          help
+          1
+        end
+      rescue Error, ArgumentError, LoadError => e
+        @err.puts "error: #{e.message}"
+        1
+      end
+      # rubocop:enable Metrics/MethodLength
+
+      private
+
+      def version
+        @out.puts VERSION
+        0
+      end
+
+      def new_project
+        name = @argv.shift || raise(ArgumentError, 'usage: lambda-microvms new NAME')
+        force = @argv.include?('--force')
+        Scaffold.new(name, force: force).create
+        @out.puts "created #{name}"
+        0
+      end
+
+      def project
+        @project ||= Project.load
+      end
+
+      def package
+        path = Packager.new(project).package
+        @out.puts path
+        0
+      end
+
+      def deploy
+        image = Deployer.new(project: project).deploy
+        @out.puts image.arn || image.data.inspect
+        0
+      end
+
+      def run_microvm
+        vm = Deployer.new(project: project).run
+        @out.puts vm.id || vm.data.inspect
+        0
+      end
+
+      def doctor
+        checks = Doctor.new(project: project).checks
+        checks.each do |check|
+          marker = check.ok ? 'PASS' : 'FAIL'
+          @out.puts "#{marker} #{check.name}: #{check.detail}"
+        end
+        checks.all?(&:ok) ? 0 : 1
+      end
+
+      def help
+        @out.puts <<~HELP
+          lambda-microvms #{VERSION}
+
+          Commands:
+            new NAME      Generate a Ruby Lambda MicroVM project using aws_lambda_ric
+            doctor        Check local project readiness
+            package       Create deployable source artifact
+            deploy        Package, upload to S3, and create a MicroVM image
+            run           Run the configured MicroVM image
+            version       Print version
+        HELP
+        0
+      end
+    end
+  end
+end
+
+exit Lambda::MicroVMs::CLI.new(ARGV).run
