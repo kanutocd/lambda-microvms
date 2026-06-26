@@ -1,6 +1,153 @@
 module Lambda
-  module Microvms
+  module MicroVMs
     VERSION: String
-    # See the writing guide of rbs: https://github.com/ruby/rbs#guides
+
+    def self.session: (image_arn: String, role_arn: String, ?after: Symbol, ?client: Client, **untyped) { (MicroVM) -> untyped } -> untyped
+
+    class Error < StandardError
+    end
+
+    class WaitTimeoutError < Error
+    end
+
+    class UnsupportedOperationError < Error
+    end
+
+    class ConfigurationError < Error
+    end
+
+    class CommandError < Error
+    end
+
+    class EndpointError < Error
+      attr_reader status: Integer
+      attr_reader body: String?
+      def initialize: (String message, status: Integer, body: String?) -> void
+    end
+
+    class Client
+      attr_reader sdk: untyped
+      def initialize: (?region: String?, ?profile: String?, ?sdk: untyped, **untyped) -> void
+      def image: (String arn) -> Image
+      def microvm: (String id_or_arn) -> MicroVM
+      def create_image: (**untyped) -> Image
+      def get_image: (**untyped) -> Image
+      def delete_image: (**untyped) -> untyped
+      def run: (**untyped) -> MicroVM
+      def run_microvm: (**untyped) -> MicroVM
+      def get_microvm: (**untyped) -> MicroVM
+      def list_microvms: (**untyped) -> untyped
+      def suspend_microvm: (**untyped) -> untyped
+      def resume_microvm: (**untyped) -> untyped
+      def terminate_microvm: (**untyped) -> untyped
+      def create_auth_token: (**untyped) -> untyped
+      def create_microvm_auth_token: (**untyped) -> untyped
+      def call_sdk: (Symbol operation, **untyped) -> untyped
+    end
+
+    class Image
+      attr_reader client: Client
+      attr_reader arn: String?
+      attr_reader data: untyped
+      def self.from_response: (client: Client, response: untyped) -> Image
+      def initialize: (client: Client, arn: String?, ?data: untyped) -> void
+      def refresh: () -> Image
+      def state: () -> Symbol
+      def ready?: () -> bool
+      def wait_until_ready: (?delay: Numeric, ?timeout: Numeric) -> Image
+      def run: (role_arn: String, ?payload: untyped, **untyped) -> MicroVM
+    end
+
+    class MicroVM
+      attr_reader client: Client
+      attr_reader id: String?
+      attr_reader data: untyped
+      def self.from_response: (client: Client, response: untyped) -> MicroVM
+      def initialize: (client: Client, id: String?, ?data: untyped) -> void
+      def refresh: () -> MicroVM
+      def state: () -> Symbol
+      def running?: () -> bool
+      def suspended?: () -> bool
+      def terminated?: () -> bool
+      def pending?: () -> bool
+      def endpoint_url: () -> String?
+      def auth_token: (?ports: untyped, ?ttl_seconds: Integer?, **untyped) -> untyped
+      def endpoint: (?token: String?, **untyped) -> Endpoint
+      def get: (String path, ?token: String?, **untyped) -> untyped
+      def post: (String path, ?json: untyped, ?body: String?, ?token: String?, **untyped) -> untyped
+      def suspend: (**untyped) -> MicroVM
+      def resume: (**untyped) -> MicroVM
+      def terminate: (**untyped) -> MicroVM
+      def wait_until_running: (?delay: Numeric, ?timeout: Numeric) -> MicroVM
+      def wait_until_suspended: (?delay: Numeric, ?timeout: Numeric) -> MicroVM
+      def wait_until_terminated: (?delay: Numeric, ?timeout: Numeric) -> MicroVM
+    end
+
+    class Endpoint
+      attr_reader url: String
+      def initialize: (url: String, token: String?, ?http: untyped) -> void
+      def get: (String path, ?headers: Hash[String, String]) -> untyped
+      def post: (String path, ?json: untyped, ?body: String?, ?headers: Hash[String, String]) -> untyped
+      def request: (singleton(Net::HTTPGenericRequest) klass, String path, ?json: untyped, ?body: String?, ?headers: Hash[String, String]) -> untyped
+    end
+
+    class Project
+      DEFAULT_CONFIG: String
+      attr_reader root: String
+      attr_reader config_path: String
+      attr_reader config: Hash[String, untyped]
+      def self.load: (?String path) -> Project
+      def initialize: (root: String, config_path: String, config: Hash[untyped, untyped]) -> void
+      def name: () -> String
+      def region: () -> String?
+      def profile: () -> String?
+      def role_arn: () -> String?
+      def image_arn: () -> String?
+      def image_name: () -> String
+      def dockerfile: () -> String
+      def build_context: () -> String
+      def artifact_path: () -> String
+      def s3_bucket: () -> String?
+      def s3_prefix: () -> String
+      def lifecycle_after: () -> Symbol
+      def payload: () -> Hash[String, untyped]
+      def create_image_params: (artifact_uri: String) -> Hash[Symbol, untyped]
+      def run_params: () -> Hash[Symbol, untyped]
+      def require!: (String field, untyped value) -> untyped
+    end
+
+    class Scaffold
+      attr_reader name: String
+      attr_reader directory: String
+      def initialize: (String name, ?directory: String, ?force: bool) -> void
+      def create: () -> String
+    end
+
+    class Packager
+      DEFAULT_EXCLUDES: Array[String]
+      attr_reader project: Project
+      def initialize: (Project project) -> void
+      def package: (?output: String) -> String
+    end
+
+    class Deployer
+      attr_reader project: Project
+      attr_reader client: Client
+      attr_reader s3: untyped
+      def initialize: (project: Project, ?client: untyped, ?s3: untyped) -> void
+      def package: () -> String
+      def upload: (String path) -> String
+      def deploy: () -> Image
+      def run: () -> MicroVM
+    end
+
+    class Doctor
+      Check: untyped
+      attr_reader project: Project
+      attr_reader runner: untyped
+      def initialize: (project: Project, ?runner: untyped) -> void
+      def checks: () -> Array[untyped]
+      def ok?: () -> bool
+    end
   end
 end
