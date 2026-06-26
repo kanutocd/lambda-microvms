@@ -16,60 +16,114 @@ module Lambda
         @sdk = sdk || build_sdk(region:, profile:, **)
       end
 
+      # Build an image resource wrapper without fetching it.
+      #
+      # @param arn [String] MicroVM image ARN
+      # @return [Image] image resource wrapper
       def image(arn)
         Image.new(client: self, arn: arn)
       end
 
+      # Build a MicroVM resource wrapper without fetching it.
+      #
+      # @param id_or_arn [String] MicroVM id or ARN
+      # @return [MicroVM] MicroVM resource wrapper
       def microvm(id_or_arn)
         MicroVM.new(client: self, id: id_or_arn)
       end
 
+      # Create a MicroVM image through the Lambda SDK.
+      #
+      # @param params [Hash] SDK request parameters
+      # @return [Image] created image resource
       def create_image(**params)
         response = call_sdk(:create_microvm_image, **params)
         Image.from_response(client: self, response: response)
       end
 
+      # Fetch a MicroVM image and wrap the SDK response.
+      #
+      # @param params [Hash] SDK request parameters
+      # @return [Image] fetched image resource
       def get_image(**params)
         response = call_sdk(:get_microvm_image, **params)
         Image.from_response(client: self, response: response)
       end
 
+      # Delete a MicroVM image.
+      #
+      # @param params [Hash] SDK request parameters
+      # @return [Object] raw SDK response
       def delete_image(**params)
         call_sdk(:delete_microvm_image, **params)
       end
 
+      # Run a MicroVM from an image.
+      #
+      # @param params [Hash] SDK request parameters
+      # @return [MicroVM] started MicroVM resource
       def run(**params)
         response = call_sdk(:run_microvm, **params)
         MicroVM.from_response(client: self, response: response)
       end
       alias run_microvm run
 
+      # Fetch a MicroVM and wrap the SDK response.
+      #
+      # @param params [Hash] SDK request parameters
+      # @return [MicroVM] fetched MicroVM resource
       def get_microvm(**params)
         response = call_sdk(:get_microvm, **params)
         MicroVM.from_response(client: self, response: response)
       end
 
+      # List MicroVMs using the underlying Lambda SDK client.
+      #
+      # @param params [Hash] SDK request parameters
+      # @return [Object] raw SDK response
       def list_microvms(**params)
         call_sdk(:list_microvms, **params)
       end
 
+      # Suspend a MicroVM.
+      #
+      # @param params [Hash] SDK request parameters
+      # @return [Object] raw SDK response
       def suspend_microvm(**params)
         call_sdk(:suspend_microvm, **params)
       end
 
+      # Resume a suspended MicroVM.
+      #
+      # @param params [Hash] SDK request parameters
+      # @return [Object] raw SDK response
       def resume_microvm(**params)
         call_sdk(:resume_microvm, **params)
       end
 
+      # Terminate a MicroVM.
+      #
+      # @param params [Hash] SDK request parameters
+      # @return [Object] raw SDK response
       def terminate_microvm(**params)
         call_sdk(:terminate_microvm, **params)
       end
 
+      # Create an auth token for direct MicroVM endpoint access.
+      #
+      # @param params [Hash] SDK request parameters
+      # @return [Object] raw SDK response
       def create_auth_token(**params)
         call_sdk(:create_microvm_auth_token, **params)
       end
       alias create_microvm_auth_token create_auth_token
 
+      # Dispatch a supported operation to the underlying SDK client.
+      #
+      # @param operation [Symbol] SDK method name
+      # @param params [Hash] SDK request parameters
+      # @return [Object] raw SDK response
+      # @raise [UnsupportedOperationError] when the SDK does not expose the operation
       def call_sdk(operation, **params)
         unless @sdk.respond_to?(operation)
           raise UnsupportedOperationError, "Aws::Lambda::Client does not expose ##{operation}; upgrade aws-sdk-lambda"

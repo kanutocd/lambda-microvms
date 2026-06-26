@@ -16,14 +16,35 @@ module Lambda
         @http = http
       end
 
+      # Send an authenticated GET request to the MicroVM endpoint.
+      #
+      # @param path [String] endpoint path
+      # @param headers [Hash] additional HTTP headers
+      # @return [Hash,String,nil] parsed JSON response or raw body
       def get(path, headers: {})
         request(Net::HTTP::Get, path, headers:)
       end
 
+      # Send an authenticated POST request to the MicroVM endpoint.
+      #
+      # @param path [String] endpoint path
+      # @param json [Hash,Array,nil] JSON body to encode
+      # @param body [String,nil] raw request body
+      # @param headers [Hash] additional HTTP headers
+      # @return [Hash,String,nil] parsed JSON response or raw body
       def post(path, json: nil, body: nil, headers: {})
         request(Net::HTTP::Post, path, json:, body:, headers:)
       end
 
+      # Build and execute an authenticated HTTP request.
+      #
+      # @param klass [Class] Net::HTTP request class
+      # @param path [String] endpoint path
+      # @param json [Hash,Array,nil] JSON body to encode
+      # @param body [String,nil] raw request body
+      # @param headers [Hash] additional HTTP headers
+      # @return [Hash,String,nil] parsed JSON response or raw body
+      # @raise [EndpointError] when the endpoint returns a non-2xx status
       def request(klass, path, json: nil, body: nil, headers: {})
         req = build_request(klass, path, headers:, body:, json:)
         response = @http.start(req.uri.host, req.uri.port, use_ssl: req.uri.scheme == 'https') do |http|

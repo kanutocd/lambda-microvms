@@ -6,6 +6,11 @@ module Lambda
     module Util
       module_function
 
+      # Extract the first non-nil value from an object method or hash-like key.
+      #
+      # @param value [Object] response object, hash, or SDK structure
+      # @param keys [Array<Symbol,String>] candidate method or key names
+      # @return [Object, nil] the first extracted non-nil value
       def extract(value, *keys)
         keys.each do |key|
           if value.respond_to?(key)
@@ -26,6 +31,10 @@ module Lambda
         nil
       end
 
+      # Normalize a provider state value into a lowercase symbol.
+      #
+      # @param value [Object] state-like value
+      # @return [Symbol] normalized state
       def normalize_state(value)
         value.to_s.downcase.to_sym
       end

@@ -5,6 +5,7 @@ module Lambda
   module MicroVMs
     # Performs lightweight local project readiness checks.
     class Doctor
+# Result object for a single doctor check.
       Check = Struct.new(:name, :ok, :detail, keyword_init: true)
 
       attr_reader :project, :runner
@@ -14,6 +15,9 @@ module Lambda
         @runner = runner
       end
 
+# Run all local readiness checks.
+      #
+      # @return [Array<Check>] check results
       def checks
         [
           check('Ruby', RUBY_VERSION >= '3.2', RUBY_VERSION),

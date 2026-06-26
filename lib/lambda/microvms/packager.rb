@@ -8,6 +8,7 @@ module Lambda
   module MicroVMs
     # Creates a deployable source artifact for Lambda MicroVM image creation.
     class Packager
+      # Default zip exclusion patterns.
       DEFAULT_EXCLUDES = ['.git/*', 'tmp/*', 'vendor/bundle/*', '*.gem'].freeze
 
       attr_reader :project
@@ -16,6 +17,11 @@ module Lambda
         @project = project
       end
 
+# Create the zip artifact for the configured project.
+      #
+      # @param output [String] output zip path
+      # @return [String] output path
+      # @raise [CommandError] when zip exits unsuccessfully
       def package(output: project.artifact_path)
         FileUtils.mkdir_p(File.dirname(output))
         relative_output = begin

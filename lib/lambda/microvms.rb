@@ -15,11 +15,16 @@ require_relative 'microvms/packager'
 require_relative 'microvms/deployer'
 require_relative 'microvms/doctor'
 
+# Namespace for Lambda-related libraries.
 module Lambda
   # Idiomatic Ruby lifecycle helpers for AWS Lambda MicroVMs.
   module MicroVMs
     module_function
 
+    # Run a MicroVM from an image, yield it, and apply the requested cleanup policy.
+    #
+    # @see Lambda::MicroVMs::Session.session
+    # @return [Object] the block result
     def session(...)
       Session.session(...)
     end
